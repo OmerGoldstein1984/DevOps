@@ -1,6 +1,8 @@
 import boto3
 import sys
 
+key_pair_name = 'ec2'
+
 
 def turnEC2(action, instanceId):
     instances = []
@@ -24,16 +26,25 @@ def turnEC2(action, instanceId):
             raise
 
 
+def createKeyPair():
+    ec2 = boto3.resource('ec2')
+    key = ec2.create_key_pair(KeyName=key_pair_name)
+    with open('./key.pem', 'w') as file:
+        file.write(key.key_material)
+    print(key.key_fingerprint)
+
+
 def createEC2(number):
+    ec2 = boto3.resource('ec2')
     try:
         print(f'creating {number} instances... \n')
-        ec2 = boto3.resource('ec2')
         ec2.create_instances(
             ImageId="ami-053b0d53c279acc90",
             MinCount=1,
             MaxCount=int(number),
             InstanceType="t2.micro",
-            KeyName="ec2"
+            KeyName=key_pair_name,
+            SecurityGroupIds=['sg-0dd85863e893a17d1']
         )
     except Exception as e:
         raise
@@ -41,15 +52,19 @@ def createEC2(number):
     print(describeEC2s())
 
 
+# running only
 def describeEC2s():
-    instances = []
-    ec2 = boto3.client('ec2')
-    response = ec2.describe_instances()
-    for r in response['Reservations']:
-        for i in r['Instances']:
-            instances.append(i['InstanceId'])
-    print(instances)
-    return instances
+
+    running_instances= []
+    ec2client = boto3.client('ec2')
+    response = ec2client.describe_instances()
+    for reservation in response["Reservations"]:
+        for instance in reservation["Instances"]:
+            if instance['State']['Name'] == 'running':
+                x = (instance["InstanceId"])
+                # print(x)
+                running_instances.append(x)
+    return running_instances
 
 
 def terminateEC2(ids):
