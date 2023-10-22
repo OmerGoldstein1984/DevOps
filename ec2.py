@@ -60,7 +60,7 @@ def describeEC2s():
     response = ec2client.describe_instances()
     for reservation in response["Reservations"]:
         for instance in reservation["Instances"]:
-            if instance['State']['Name'] == 'running':
+            if instance['State']['Name'] != 'terminated':
                 x = (instance["InstanceId"])
                 # print(x)
                 running_instances.append(x)
